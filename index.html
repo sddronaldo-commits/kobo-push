@@ -313,11 +313,11 @@ code{background:var(--bg);border:1px solid var(--border);padding:1px 5px;border-
         📁 Upload Data File
         <span class="badge bt" id="formNameBadge">—</span>
       </div>
-      <div class="tabs">
-        <button class="tab on" id="tabBatch" onclick="setMode('batch')">Batch — all rows = 1 submission</button>
-        <button class="tab" id="tabPerRow" onclick="setMode('perrow')">Per-Row — each row = 1 submission</button>
+      <div class="tabs" id="modeTabs">
+        <button class="tab on" id="tabBatch" onclick="setMode('batch')">Batch</button>
+        <button class="tab" id="tabPerRow" onclick="setMode('perrow')">Per-Row</button>
       </div>
-      <div class="alert alert-a" id="modeHint" style="font-size:12px;margin-bottom:14px;"></div>
+      <div class="alert alert-t" id="modeHint" style="font-size:12px;margin-bottom:14px;"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
         <span style="font-size:12px;color:var(--faint);">Don't have a file yet?</span>
         <button class="btn btn-outline" onclick="downloadTemplate()" style="font-size:12px;padding:6px 12px;">⬇ Download Template</button>
@@ -441,8 +441,9 @@ if(FIXED_UID)document.getElementById('assetUid').value=FIXED_UID;
 if(!CFG.token)setTimeout(()=>openSettings(),300);
 
 function goStep(n){
-  if(n===3)buildMapUI();
-  if(n===4)buildPushSummary();
+  if(n===2) autoDetectMode();
+  if(n===3) buildMapUI();
+  if(n===4) buildPushSummary();
   [1,2,3,4].forEach(i=>{
     document.getElementById('p'+i).classList.toggle('hidden',i!==n);
     const el=document.getElementById('si'+i);
@@ -450,11 +451,22 @@ function goStep(n){
     if(i===n)el.classList.add('active');
     if(i<n)el.classList.add('done');
   });
-  // Update step lines
   [1,2,3].forEach(i=>{
     const line=document.getElementById('sl'+i);
     if(line)line.classList.toggle('done',i<n);
   });
+}
+
+function autoDetectMode(){
+  const hasRepeats=S.repeats.length>0;
+  const tabs=document.getElementById('modeTabs');
+  if(hasRepeats){
+    setMode('batch',false);
+    tabs.style.display='none'; // hide — only mode that makes sense
+  }else{
+    setMode('perrow',false);
+    tabs.style.display='none'; // hide — only mode that makes sense
+  }
 }
 
 async function loadForm(){
@@ -531,15 +543,17 @@ function flatFields(survey){
   return out;
 }
 
-function setMode(m){
+function setMode(m, announce=true){
   S.mode=m;
   document.getElementById('tabBatch').classList.toggle('on',m==='batch');
   document.getElementById('tabPerRow').classList.toggle('on',m==='perrow');
-  document.getElementById('modeHint').innerHTML=m==='batch'
-    ?'All rows become one submission inside a repeat group. Use this for rosters and participant lists.'
-    :'Each row becomes a separate submission. Use this for individual responses.';
+  const hint=document.getElementById('modeHint');
+  if(m==='batch'){
+    hint.textContent=`Batch mode — all rows will be grouped into one submission inside the "${S.selRepeat||'repeat group'}" repeat group.`;
+  }else{
+    hint.textContent='Per-row mode — each row becomes a separate independent submission.';
+  }
 }
-setMode('batch');
 
 const dz=document.getElementById('dropzone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
