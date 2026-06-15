@@ -687,6 +687,18 @@ function evalCalc(expr,rowData,enrollData){
       // upper-case / lower-case
       s=s.replace(/upper-case\(([^()]*)\)/g,(_,v)=>{const t=v.trim();return((t[0]==="'"||t[0]==='"')?t.slice(1,-1):t).toUpperCase();});
       s=s.replace(/lower-case\(([^()]*)\)/g,(_,v)=>{const t=v.trim();return((t[0]==="'"||t[0]==='"')?t.slice(1,-1):t).toLowerCase();});
+      // substr(str, start) or substr(str, start, end) — 0-indexed, end exclusive
+      s=s.replace(/substr\(([^,]+),\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)/g,(_,str,start,end)=>{
+        const t=str.trim();const v=(t[0]==="'"||t[0]==='"')?t.slice(1,-1):t;
+        return v.slice(parseInt(start),end!==undefined?parseInt(end):undefined);
+      });
+      // coalesce(val1, val2, ...) — first non-empty value
+      s=s.replace(/coalesce\(([^()]*)\)/g,(_,args)=>{
+        const parts=args.split(',').map(a=>{const t=a.trim();return(t[0]==="'"||t[0]==='"')?t.slice(1,-1):t;});
+        return parts.find(p=>p!==''&&p!==undefined)??'0';
+      });
+      // pulldata() — needs attached CSV, can't evaluate — return empty
+      s=s.replace(/pulldata\([^()]*\)/g,'');
       changed=s!==prev;
     }
     // Strip surrounding quotes
